@@ -37,13 +37,52 @@
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/timer.h>
-
+#include <asm/switch_to.h>
 #include "mypcb.h"
 extern tPCB task[MAX_TASK_NUM];
+extern tPCB * my_current_task;
+
 /*
  * Called by timer interrupt.
+ * it runs in the name of current running process,
+ * so it use kernel stack of current running process
  */
 void my_timer_handler(void)
 {
-	printk(KERN_NOTICE "\n>>>>>>>>>>>>>>>>>my_timer_handler here<<<<<<<<<<<<<<<<<<\n\n");
+    tPCB * next;
+    tPCB * prev;
+    printk(KERN_NOTICE ">>>my_timer_handler here<<<\n");
+
+    if(my_current_task == NULL)
+    {
+    	return;
+    }
+    /* schedule */
+    next = my_current_task->next;
+    prev = my_current_task;
+    while(next->state != 0)
+    {
+        next = next->next;
+    }
+    if(next->state == 0)/* -1 unrunnable, 0 runnable, >0 stopped */
+    {
+        //switch_to(prev, next, prev); 
+    	/* switch to next process */
+    	asm volatile(	
+        	"pushl %%ebp\n\t" 	    /* save ebp */
+        	"movl %%esp,%0\n\t" 	/* save esp */
+        	"movl %2,%%esp\n\t"     /* restore  esp */
+        	"movl $1f,%1\n\t"       /* save eip */	
+        	"pushl %3\n\t" 
+        	"ret\n\t" 	            /* restore  eip */
+        	"1:\t"                  /* next process start here */
+        	"popl %%ebp\n\t"
+        	: "=m" (prev->thread.sp),"=m" (prev->thread.ip)
+        	: "m" (next->thread.sp),"m" (next->thread.ip)
+        	: /* reloaded segment registers */
+        	"memory"
+    	); 
+    	my_current_task = next;
+    }
+    return;	
 }

@@ -13,8 +13,7 @@
 /* CPU-specific state of this task */
 struct Thread {
     unsigned long		ip;
-    unsigned long		esp;
-    unsigned long		ebp;
+    unsigned long		sp;
 };
 
 typedef struct PCB{
@@ -23,5 +22,6 @@ typedef struct PCB{
     void* stack;
     /* CPU-specific state of this task */
     struct Thread thread;
+    unsigned long	task_entry;
     struct PCB *next;
 }tPCB;
