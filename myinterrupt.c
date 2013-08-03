@@ -38,6 +38,8 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/timer.h>
 
+#include "mypcb.h"
+extern tPCB task[MAX_TASK_NUM];
 /*
  * Called by timer interrupt.
  */
