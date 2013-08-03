@@ -23,4 +23,5 @@ typedef struct PCB{
     void* stack;
     /* CPU-specific state of this task */
     struct Thread thread;
+    struct PCB *next;
 }tPCB;
