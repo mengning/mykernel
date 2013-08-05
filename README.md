@@ -3,7 +3,7 @@
 It is a platform to write your own OS kernel,its based on Linux Kernel 3.9.4 source code.
 
 + Set up this platform
-    + install QEMU and download [Linux Kernel 3.9.4 source code](https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.9.4.tar.xz)
+    + install QEMU【sudo apt-get install qemu 这个源http://mirror-fpt-telecom.fpt.net/ubuntu/ 有qemu】 and download [Linux Kernel 3.9.4 source code](https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.9.4.tar.xz)
     + cd linux-3.9.4
     + patch -p1 < ../[mykernel_for_linux3.9.4sc.patch](https://raw.github.com/mengning/mykernel/master/mykernel_for_linux3.9.4sc.patch)
     + make allnoconfig
