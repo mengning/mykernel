@@ -7,6 +7,7 @@
  *
  */
 
+
 #define MAX_TASK_NUM        100
 #define KERNEL_STACK_SIZE   1024*8
 
