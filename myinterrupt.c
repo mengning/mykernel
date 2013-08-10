@@ -41,6 +41,8 @@
 #include "mypcb.h"
 extern tPCB task[MAX_TASK_NUM];
 extern tPCB * my_current_task;
+extern int task_count;
+
 
 /*
  * Called by timer interrupt.
@@ -53,20 +55,69 @@ void my_timer_handler(void)
     tPCB * prev;
     printk(KERN_NOTICE ">>>my_timer_handler here<<<\n");
 
-    if(my_current_task == NULL)
+    if(my_current_task == NULL 
+        || my_current_task->next == NULL)
     {
     	return;
     }
+#if 0
+    if(task_count < MAX_TASK_NUM)
+    {
+        
+        /* fork a new process */
+        tPCB * parent = my_current_task;
+        tPCB * child = NULL;
+        unsigned long ebp;
+        int i;
+        for(i=0;i<MAX_TASK_NUM;i++)
+        {
+            if (task[i].pid == -1)
+            {
+                child = &task[i];
+                break;
+            }
+        }       
+    	/* pretended switched state */
+    	asm volatile(	
+        	"pushl %%ebp\n\t" 	    /* save ebp */
+        	"movl %%esp,%0\n\t" 	/* save esp */
+        	"movl $1f,%1\n\t"       /* save eip */
+        	: "=m" (parent->thread.sp),"=m" (parent->thread.ip)
+        	: 
+    	); 
+        printk(KERN_NOTICE ">>>fork a new process<<<\n");
+    	memcpy(child,parent,sizeof(tPCB));
+    	task_count = task_count + 1;
+    	/* insert new PCB */
+    	child->next = parent->next;
+    	parent->next = child;
+    	child->pid = task_count;
+    	child->thread.sp = (unsigned long)&child->stack[KERNEL_STACK_SIZE-1];
+    	ebp = child->thread.sp;
+    	child->thread.ip = child->task_entry;
+    	my_current_task = child;
+    	/* fork success,switch to new process */
+    	if(child->task_entry == parent->task_entry)
+    	    printk(KERN_NOTICE ">>>fork a new process task_entry<<<\n");
+    	asm volatile(	
+        	"movl %0,%%esp\n\t"     /* new esp */	
+        	"movl %0,%%ebp\n\t"     /* new ebp */
+        	"pushfl \n\t"
+        	"pushl %%cs\n\t"
+        	"pushl %1\n\t"
+        	"iret\n\t"
+        	: 
+        	: "m" (child->thread.sp),"m" (child->thread.ip)
+    	); 	
+    	return;
+    }
+#endif
     /* schedule */
     next = my_current_task->next;
     prev = my_current_task;
-    while(next->state != 0)
-    {
-        next = next->next;
-    }
     if(next->state == 0)/* -1 unrunnable, 0 runnable, >0 stopped */
     {
-        //switch_to(prev, next, prev); 
+        printk(KERN_NOTICE ">>>switch %d to %d<<<\n",prev->pid,next->pid);
     	/* switch to next process */
     	asm volatile(	
         	"pushl %%ebp\n\t" 	    /* save ebp */
@@ -79,10 +130,10 @@ void my_timer_handler(void)
         	"popl %%ebp\n\t"
         	: "=m" (prev->thread.sp),"=m" (prev->thread.ip)
         	: "m" (next->thread.sp),"m" (next->thread.ip)
-        	: /* reloaded segment registers */
-        	"memory"
     	); 
     	my_current_task = next;
     }
+    
     return;	
 }
+

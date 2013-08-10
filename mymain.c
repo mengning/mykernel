@@ -81,53 +81,32 @@
 #endif
 
 #include "mypcb.h"
-char stack[MAX_TASK_NUM][KERNEL_STACK_SIZE];
+
 tPCB task[MAX_TASK_NUM];
 tPCB * my_current_task = NULL;
+int task_count = 0;
 
-void my_cpu_idle(void);
-void process1(void);
-void process2(void);
-void process3(void);
+void my_process(void);
+
 
 void __init my_start_kernel(void)
 {
-    int pid = 3;
-    /* Initialize process 3*/
-    task[pid].pid = pid;
-    task[pid].state = -1;/* -1 unrunnable, 0 runnable, >0 stopped */
-    task[pid].stack = stack[task[pid].pid + 1];
-    task[pid].task_entry = task[pid].thread.ip = (unsigned long)process1;
-    task[pid].thread.sp = (unsigned long)task[pid].stack;
-    task[pid].next = &task[0];;
-    pid = 2;
-    /* Initialize process 2*/
-    task[pid].pid = pid;
-    task[pid].state = -1;/* -1 unrunnable, 0 runnable, >0 stopped */
-    task[pid].stack = stack[task[pid].pid + 1];
-    task[pid].task_entry = task[pid].thread.ip = (unsigned long)process1;
-    task[pid].thread.sp = (unsigned long)task[pid].stack;
-    task[pid].next = &task[pid+1];
-    pid = 1;
-    /* Initialize process 1*/
-    task[pid].pid = pid;
-    task[pid].state = -1;/* -1 unrunnable, 0 runnable, >0 stopped */
-    task[pid].stack = stack[task[pid].pid + 1];
-    task[pid].task_entry = task[pid].thread.ip = (unsigned long)process1;
-    task[pid].thread.sp = (unsigned long)task[pid].stack;
-    task[pid].next = &task[pid+1];
-    pid = 0;
+    int pid = 0;
+    int i;
+    for(i=0;i<MAX_TASK_NUM;i++)
+    {
+        task[i].pid = -1;
+    }
     /* Initialize process 0*/
     task[pid].pid = pid;
-    task[pid].state = -1;/* -1 unrunnable, 0 runnable, >0 stopped */
-    task[pid].stack = stack[task[pid].pid + 1];
-    task[pid].task_entry = task[pid].thread.ip = (unsigned long)my_cpu_idle;
-    task[pid].thread.sp = (unsigned long)task[pid].stack;
-    task[pid].next = &task[pid+1];
+    task[pid].state = 0;/* -1 unrunnable, 0 runnable, >0 stopped */
+    task[pid].task_entry = task[pid].thread.ip = (unsigned long)my_process;
+    task[pid].thread.sp = (unsigned long)&task[pid].stack[KERNEL_STACK_SIZE-1];
+    task[pid].next = &task[pid];
     /* start process 0 by task[0] */
     pid = 0;
     my_current_task = &task[pid];
-    my_current_task->state = 0;
+    task_count = task_count + 1;
 	asm volatile(
     	"movl %1,%%esp\n\t" 	/* set task[pid].thread.sp to esp */
     	"pushl %1\n\t" 	        /* push ebp */
@@ -138,61 +117,15 @@ void __init my_start_kernel(void)
     	: "c" (task[pid].thread.ip),"d" (task[pid].thread.sp)	/* input c or d mean %ecx/%edx*/
 	);
 }   
-void my_cpu_idle(void)
+void my_process(void)
 {
     int i = 0;
-    int pid;
-    tPCB * next = my_current_task->next;
-    if(next->state != 0)
+    while(1)
     {
-        /* start process x by task[x] */
-        pid = next->pid;
-        my_current_task = &task[pid];
-        my_current_task->state = 0;
-    	asm volatile(
-        	"movl %1,%%esp\n\t" 	/* set task[pid].thread.sp to esp */
-        	"pushl %1\n\t" 	        /* push ebp */
-        	"pushl %0\n\t" 	        /* push task[pid].thread.ip */
-        	"ret\n\t" 	            /* pop task[pid].thread.ip to eip */
-        	"popl %%ebp\n\t"
-        	: 
-        	: "c" (task[pid].thread.ip),"d" (task[pid].thread.sp)	/* input c or d mean %ecx/%edx*/
-    	);
+        i++;
+        if(i%10000 == 0)
+        {
+            printk(KERN_NOTICE "this is process %d \n",my_current_task->pid);
+        }     
     }
-    while(1)
-    {
-        i++;
-        if(i%100000 == 0)
-            printk(KERN_NOTICE "my_cpu_idle  %d \n",i);      
-    }
-}
-void process1(void)
-{
-    int i = 0;
-    while(1)
-    {
-        i++;
-        if(i%100000 == 0)
-            printk(KERN_NOTICE "process11111111111\n");     
-    }    
-}
-void process2(void)
-{
-    int i = 0;
-    while(1)
-    {
-        i++;
-        if(i%100000 == 0)
-            printk(KERN_NOTICE "process2222222222\n");     
-    } 
-}
-void process3(void)
-{
-    int i = 0;
-    while(1)
-    {
-        i++;
-        if(i%100000 == 0)
-            printk(KERN_NOTICE "process333333333\n");     
-    } 
 }
