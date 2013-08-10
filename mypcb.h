@@ -7,8 +7,7 @@
  *
  */
 
-
-#define MAX_TASK_NUM        100
+#define MAX_TASK_NUM        4
 #define KERNEL_STACK_SIZE   1024*8
 
 /* CPU-specific state of this task */
@@ -26,4 +25,6 @@ typedef struct PCB{
     unsigned long	task_entry;
     struct PCB *next;
 }tPCB;
+
+void my_schedule(void);
 
