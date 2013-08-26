@@ -42,5 +42,4 @@ It is a platform to write your own OS kernel,its based on Linux Kernel 3.9.4 sou
     + diff -Naur linux-3.9.4 linux-3.9.4.new/ > mykernel_for_linux3.9.4sc.patch
 
 # Links
-
 * [2013年暑期补课计算机操作系统原理](https://github.com/mengning/mykernel/wiki/OS2013)
