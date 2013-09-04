@@ -26,5 +26,3 @@ typedef struct PCB{
     struct PCB *next;
 }tPCB;
 
-void my_schedule(void);
-

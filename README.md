@@ -1,3 +1,27 @@
+根据孟宁老师的示例kernel和课堂讲授的知识，我对时间中断的kernel版本做了一定的改变，其主要思想是：
+
+让mymain中的执行流和myinterrupt时钟中断的执行流分别调用2种修改全局变量（count计数）的过程，一种是没有锁定的方式（含有竞争条件），另一种是同步的方式（使用xchg指令实现对一个semaphore的锁定）。
+然后比较两种修改的差别，以体现同步机制的作用。
+
+为保证修改过程中能明显观察到执行流并行的效果，我为2种方式的改变变量过程加上了一定的延时，这样mymain中的执行流就有更大的机会在读取全局变量后，但执行修改前被中断。
+
+因为时钟中断是屏蔽的，其本身在执行过程中不会被mymain打断，因此该同步的模拟没有等待的过程，即通过
+movl 1，eax
+xchg eax，semaphore
+cmp eax，0
+之后，没有一直循环等待semaphore的过程，而是直接跳过该次对竞争变量的修改过程，以避免死循环。
+
+同时，两个执行流同时记录自己执行改变的次数，这样在整个程序执行的过程中，就可以观察到三个结果：
+1是含有竞争条件时对ncount的计数
+2是在同步条件下，myinterrupt跳过计数的count计数
+3是mymain和myinterrupt真实执行计数过程的总次数
+
+如有不妥，敬请老师和同学们批评指正！
+
+谢谢孟宁老师！您设计的实验对指导学习和理解知识有很好的针对性~学得很开心！
+
+quotes：
+==============================================================================================
 # Welcome to the mykernel!
 
 It is a platform to write your own OS kernel,its based on Linux Kernel 3.9.4 source code.
@@ -18,5 +42,4 @@ It is a platform to write your own OS kernel,its based on Linux Kernel 3.9.4 sou
     + diff -Naur linux-3.9.4 linux-3.9.4.new/ > mykernel_for_linux3.9.4sc.patch
 
 # Links
-
 * [2013年暑期补课计算机操作系统原理](https://github.com/mengning/mykernel/wiki/OS2013)
