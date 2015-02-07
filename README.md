@@ -3,9 +3,14 @@
 It is a platform to write your own OS kernel,its based on Linux Kernel 3.9.4 source code.
 
 + Set up this platform
-    + install QEMU【sudo apt-get install qemu 这个源http://mirror-fpt-telecom.fpt.net/ubuntu/ 有qemu】 and download [Linux Kernel 3.9.4 source code](https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.9.4.tar.xz)
-    + cd linux-3.9.4
-    + patch -p1 < ../[mykernel_for_linux3.9.4sc.patch](https://raw.github.com/mengning/mykernel/master/mykernel_for_linux3.9.4sc.patch)
+    + install QEMU【sudo apt-get install qemu 这个源http://mirror-fpt-telecom.fpt.net/ubuntu/ 有qemu】 
+    + sudo ln -s /usr/bin/qemu-system-i386 /usr/bin/qemu
+	+ wget https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.9.4.tar.xz # download [Linux Kernel 3.9.4 source code](https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.9.4.tar.xz)
+    + wget https://raw.github.com/mengning/mykernel/master/mykernel_for_linux3.9.4sc.patch # download [mykernel_for_linux3.9.4sc.patch](https://raw.github.com/mengning/mykernel/master/mykernel_for_linux3.9.4sc.patch)
+	+ xz -d linux-3.9.4.tar.xz
+	+ tar -xvf linux-3.9.4.tar
+	+ cd linux-3.9.4
+    + patch -p1 < ../mykernel_for_linux3.9.4sc.patch
     + make allnoconfig
     + make
     + qemu -kernel arch/x86/boot/bzImage 从qemu窗口中您可以看到my_start_kernel在执行，同时my_timer_handler时钟中断处理程序周期性执行。
