@@ -25,3 +25,4 @@ It is a platform to write your own OS kernel,its based on Linux Kernel 3.9.4 sou
 # Links
 
 * [2013年暑期补课计算机操作系统原理](https://github.com/mengning/mykernel/wiki/OS2013)
+* 和mykernel类似的项目[kernel-in-kernel](https://github.com/jserv/kernel-in-kernel)值得参考
