@@ -53,6 +53,8 @@ void my_schedule(void)
     prev = my_current_task;
     if(next->state == 0)/* -1 unrunnable, 0 runnable, >0 stopped */
     {
+    	my_current_task = next; 
+    	printk(KERN_NOTICE ">>>switch %d to %d<<<\n",prev->pid,next->pid);  
     	/* switch to next process */
     	asm volatile(	
         	"pushl %%ebp\n\t" 	    /* save ebp */
@@ -66,8 +68,7 @@ void my_schedule(void)
         	: "=m" (prev->thread.sp),"=m" (prev->thread.ip)
         	: "m" (next->thread.sp),"m" (next->thread.ip)
     	); 
-    	my_current_task = next; 
-    	printk(KERN_NOTICE ">>>switch %d to %d<<<\n",prev->pid,next->pid);   	
+ 	
     }
     else
     {
