@@ -83,7 +83,7 @@ void my_schedule(void)
         	"movl $1f,%1\n\t"       /* save eip */	
         	"pushl %3\n\t" 
         	"ret\n\t" 	            /* restore  eip */
-            "movl %2,%%ebp\n\t"     /* restore  ebp */
+        	"movl %2,%%ebp\n\t"     /* restore  ebp */
         	: "=m" (prev->thread.sp),"=m" (prev->thread.ip)
         	: "m" (next->thread.sp),"m" (next->thread.ip)
     	);          
