@@ -37,9 +37,7 @@ void __init my_start_kernel(void)
     {
         memcpy(&task[i],&task[0],sizeof(tPCB));
         task[i].pid = i;
-        task[i].thread.sp = (unsigned long)&task[i].stack[KERNEL_STACK_SIZE-1];
-	*(task[i].thread.sp - 1) = task[i].thread.sp;
-	task[i].thread.sp -= 1;
+        task[i].thread.sp = (unsigned long)&task[i].stack[KERNEL_STACK_SIZE];
         task[i].next = task[i-1].next;
         task[i-1].next = &task[i];
     }
