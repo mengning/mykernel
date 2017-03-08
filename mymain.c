@@ -50,7 +50,6 @@ void __init my_start_kernel(void)
     	"pushl %1\n\t" 	        /* push ebp */
     	"pushl %0\n\t" 	        /* push task[pid].thread.ip */
     	"ret\n\t" 	            /* pop task[pid].thread.ip to eip */
-    	"popl %%ebp\n\t"
     	: 
     	: "c" (task[pid].thread.ip),"d" (task[pid].thread.sp)	/* input c or d mean %ecx/%edx*/
 	);
