@@ -53,10 +53,12 @@ void __init my_start_kernel(void)
     	: 
     	: "c" (task[pid].thread.ip),"d" (task[pid].thread.sp)	/* input c or d mean %ecx/%edx*/
 	);
-}   
+} 
+
+int i = 0;
+
 void my_process(void)
-{
-    int i = 0;
+{    
     while(1)
     {
         i++;
