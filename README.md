@@ -13,7 +13,8 @@ tar -xvf linux-5.4.34.tar
 cd linux-5.4.34
 patch -p1 < ../mykernel-2.0_for_linux-5.3.34.patch
 sudo apt install build-essential libncurses-dev bison flex libssl-dev libelf-dev
-make defconfig # Default configuration is based on 'x86_64_defconfig'，使用allnoconfig编译出来qemu无法加载启动，不知道为什么？
+make defconfig # Default configuration is based on 'x86_64_defconfig'
+# 使用allnoconfig编译出来qemu无法加载启动，不知道为什么？有明白的告诉我，完整编译太慢了，消耗的资源也多。
 make -j$(nproc) # 编译的时间比较久哦
 sudo apt install qemu # install QEMU
 qemu-system-x86_64 -kernel arch/x86/boot/bzImage
