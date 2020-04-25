@@ -5,9 +5,6 @@ Develop your own OS kernel by reusing Linux infrastructure, based on x86-64/Linu
 ## Set up mykernel 2.0 in Ubuntu 18.04
 
 ```
-sudo apt install build-essential
-sudo apt install qemu # install QEMU
-sudo apt install libncurses-dev bison flex libssl-dev libelf-dev
 wget https://raw.github.com/mengning/mykernel/master/mykernel-2.0_for_linux-5.3.34.patch
 sudo apt install axel
 axel -n 20 https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.4.34.tar.xz
@@ -15,8 +12,10 @@ xz -d linux-5.4.34.tar.xz
 tar -xvf linux-5.4.34.tar
 cd linux-5.4.34
 patch -p1 < ../mykernel-2.0_for_linux-5.3.34.patch
-make defconfig # Default configuration is based on 'x86_64_defconfig'
-make -j$(nproc)
+sudo apt install build-essential libncurses-dev bison flex libssl-dev libelf-dev
+make defconfig # Default configuration is based on 'x86_64_defconfig'，使用allnoconfig编译出来qemu无法加载启动，不知道为什么？
+make -j$(nproc) # 编译的时间比较久哦
+sudo apt install qemu # install QEMU
 qemu-system-x86_64 -kernel arch/x86/boot/bzImage
 ```
     + 从qemu窗口中您可以看到my_start_kernel在执行，同时my_timer_handler时钟中断处理程序周期性执行。
