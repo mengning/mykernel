@@ -1,0 +1,243 @@
+diff -Naur linux-5.4.34/arch/x86/kernel/time.c linux-5.4.34-mykernel/arch/x86/kernel/time.c
+--- linux-5.4.34/arch/x86/kernel/time.c	2020-04-21 15:05:05.000000000 +0800
++++ linux-5.4.34-mykernel/arch/x86/kernel/time.c	2020-04-25 21:58:16.436717811 +0800
+@@ -16,6 +16,7 @@
+ #include <linux/irq.h>
+ #include <linux/i8253.h>
+ #include <linux/time.h>
++#include <linux/timer.h>
+ #include <linux/export.h>
+ 
+ #include <asm/vsyscall.h>
+@@ -59,6 +60,7 @@
+ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ {
+ 	global_clock_event->event_handler(global_clock_event);
++    	my_timer_handler();
+ 	return IRQ_HANDLED;
+ }
+ 
+diff -Naur linux-5.4.34/include/linux/start_kernel.h linux-5.4.34-mykernel/include/linux/start_kernel.h
+--- linux-5.4.34/include/linux/start_kernel.h	2020-04-21 15:05:05.000000000 +0800
++++ linux-5.4.34-mykernel/include/linux/start_kernel.h	2020-04-25 22:00:17.304717811 +0800
+@@ -9,6 +9,7 @@
+    up something else. */
+ 
+ extern asmlinkage void __init start_kernel(void);
++extern void __init my_start_kernel(void);
+ extern void __init arch_call_rest_init(void);
+ extern void __ref rest_init(void);
+ 
+diff -Naur linux-5.4.34/include/linux/timer.h linux-5.4.34-mykernel/include/linux/timer.h
+--- linux-5.4.34/include/linux/timer.h	2020-04-21 15:05:05.000000000 +0800
++++ linux-5.4.34-mykernel/include/linux/timer.h	2020-04-25 21:56:45.064717811 +0800
+@@ -193,6 +193,8 @@
+ 
+ extern void init_timers(void);
+ extern void run_local_timers(void);
++extern void my_timer_handler(void);
++
+ struct hrtimer;
+ extern enum hrtimer_restart it_real_fn(struct hrtimer *);
+ 
+diff -Naur linux-5.4.34/init/main.c linux-5.4.34-mykernel/init/main.c
+--- linux-5.4.34/init/main.c	2020-04-21 15:05:05.000000000 +0800
++++ linux-5.4.34-mykernel/init/main.c	2020-04-25 22:01:13.476717811 +0800
+@@ -781,6 +781,7 @@
+ 	arch_post_acpi_subsys_init();
+ 	sfi_init_late();
+ 
++    	my_start_kernel();
+ 	/* Do the rest non-__init'ed, we're now alive */
+ 	arch_call_rest_init();
+ }
+diff -Naur linux-5.4.34/Makefile linux-5.4.34-mykernel/Makefile
+--- linux-5.4.34/Makefile	2020-04-21 15:05:05.000000000 +0800
++++ linux-5.4.34-mykernel/Makefile	2020-04-25 22:02:47.144717811 +0800
+@@ -1012,7 +1012,7 @@
+ export MODORDER := $(extmod-prefix)modules.order
+ 
+ ifeq ($(KBUILD_EXTMOD),)
+-core-y		+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/
++core-y		+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/ mykernel/
+ 
+ vmlinux-dirs	:= $(patsubst %/,%,$(filter %/, $(init-y) $(init-m) \
+ 		     $(core-y) $(core-m) $(drivers-y) $(drivers-m) \
+diff -Naur linux-5.4.34/mykernel/Makefile linux-5.4.34-mykernel/mykernel/Makefile
+--- linux-5.4.34/mykernel/Makefile	1970-01-01 08:00:00.000000000 +0800
++++ linux-5.4.34-mykernel/mykernel/Makefile	2020-04-25 17:14:13.537908421 +0800
+@@ -0,0 +1,6 @@
++#
++# Makefile for the linux mykernel.
++#
++
++obj-y     = mymain.o myinterrupt.o
++
+diff -Naur linux-5.4.34/mykernel/myinterrupt.c linux-5.4.34-mykernel/mykernel/myinterrupt.c
+--- linux-5.4.34/mykernel/myinterrupt.c	1970-01-01 08:00:00.000000000 +0800
++++ linux-5.4.34-mykernel/mykernel/myinterrupt.c	2020-04-25 19:09:50.612555999 +0800
+@@ -0,0 +1,44 @@
++/*
++ *  linux/mykernel/myinterrupt.c
++ *
++ *  Kernel internal my_timer_handler
++ *
++ *  Copyright (C) 2013  Mengning
++ *
++ */
++#include <linux/kernel_stat.h>
++#include <linux/export.h>
++#include <linux/interrupt.h>
++#include <linux/percpu.h>
++#include <linux/init.h>
++#include <linux/mm.h>
++#include <linux/swap.h>
++#include <linux/pid_namespace.h>
++#include <linux/notifier.h>
++#include <linux/thread_info.h>
++#include <linux/time.h>
++#include <linux/jiffies.h>
++#include <linux/posix-timers.h>
++#include <linux/cpu.h>
++#include <linux/syscalls.h>
++#include <linux/delay.h>
++#include <linux/tick.h>
++#include <linux/kallsyms.h>
++#include <linux/irq_work.h>
++#include <linux/sched.h>
++#include <linux/sched/sysctl.h>
++#include <linux/slab.h>
++
++#include <asm/uaccess.h>
++#include <asm/unistd.h>
++#include <asm/div64.h>
++#include <asm/timex.h>
++#include <asm/io.h>
++
++/*
++ * Called by timer interrupt.
++ */
++void my_timer_handler(void)
++{
++	pr_notice("\n>>>>>>>>>>>>>>>>>my_timer_handler here<<<<<<<<<<<<<<<<<<\n\n");
++}
+diff -Naur linux-5.4.34/mykernel/mymain.c linux-5.4.34-mykernel/mykernel/mymain.c
+--- linux-5.4.34/mykernel/mymain.c	1970-01-01 08:00:00.000000000 +0800
++++ linux-5.4.34-mykernel/mykernel/mymain.c	2020-04-25 19:10:27.635058000 +0800
+@@ -0,0 +1,91 @@
++/*
++ *  linux/mykernel/mymain.c
++ *
++ *  Kernel internal my_start_kernel
++ *
++ *  Copyright (C) 2013  Mengning
++ *
++ */
++#include <linux/types.h>
++#include <linux/module.h>
++#include <linux/proc_fs.h>
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <linux/stackprotector.h>
++#include <linux/string.h>
++#include <linux/ctype.h>
++#include <linux/delay.h>
++#include <linux/ioport.h>
++#include <linux/init.h>
++#include <linux/initrd.h>
++#include <linux/acpi.h>
++#include <linux/tty.h>
++#include <linux/percpu.h>
++#include <linux/kmod.h>
++#include <linux/vmalloc.h>
++#include <linux/kernel_stat.h>
++#include <linux/start_kernel.h>
++#include <linux/security.h>
++#include <linux/smp.h>
++#include <linux/profile.h>
++#include <linux/rcupdate.h>
++#include <linux/moduleparam.h>
++#include <linux/kallsyms.h>
++#include <linux/writeback.h>
++#include <linux/cpu.h>
++#include <linux/cpuset.h>
++#include <linux/cgroup.h>
++#include <linux/efi.h>
++#include <linux/tick.h>
++#include <linux/interrupt.h>
++#include <linux/taskstats_kern.h>
++#include <linux/delayacct.h>
++#include <linux/unistd.h>
++#include <linux/rmap.h>
++#include <linux/mempolicy.h>
++#include <linux/key.h>
++#include <linux/buffer_head.h>
++#include <linux/debug_locks.h>
++#include <linux/debugobjects.h>
++#include <linux/lockdep.h>
++#include <linux/kmemleak.h>
++#include <linux/pid_namespace.h>
++#include <linux/device.h>
++#include <linux/kthread.h>
++#include <linux/sched.h>
++#include <linux/signal.h>
++#include <linux/idr.h>
++#include <linux/kgdb.h>
++#include <linux/ftrace.h>
++#include <linux/async.h>
++#include <linux/sfi.h>
++#include <linux/shmem_fs.h>
++#include <linux/slab.h>
++#include <linux/perf_event.h>
++#include <linux/file.h>
++#include <linux/ptrace.h>
++#include <linux/blkdev.h>
++#include <linux/elevator.h>
++
++#include <asm/io.h>
++#include <asm/bugs.h>
++#include <asm/setup.h>
++#include <asm/sections.h>
++#include <asm/cacheflush.h>
++
++#ifdef CONFIG_X86_LOCAL_APIC
++#include <asm/smp.h>
++#endif
++
++
++void __init my_start_kernel(void)
++{
++    int i = 0;
++    while(1)
++    {
++        i++;
++        if(i%100000 == 0)
++            pr_notice("my_start_kernel here  %d \n",i);
++            
++    }
++}
+diff -Naur linux-5.4.34/mykernel/README.md linux-5.4.34-mykernel/mykernel/README.md
+--- linux-5.4.34/mykernel/README.md	1970-01-01 08:00:00.000000000 +0800
++++ linux-5.4.34-mykernel/mykernel/README.md	2020-04-25 22:18:46.512717811 +0800
+@@ -0,0 +1,21 @@
++mykernel 2.0
++==========
++Develop your own OS kernel by reusing Linux infrastructure, based on x86-64/Linux Kernel 5.4.34.
++
++## Set up mykernel 2.0 in Ubuntu 18.04
++
++```
++sudo apt install build-essential
++sudo apt install axel
++sudo apt install qemu # install QEMU
++sudo apt install libncurses-dev bison flex libssl-dev libelf-dev
++wget https://raw.github.com/mengning/mykernel/master/mykernel-2.0_for_linux-5.3.34.patch
++axel -n 20 https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.4.34.tar.xz
++xz -d linux-5.4.34.tar.xz
++tar -xvf linux-5.4.34.tar
++cd linux-5.4.34
++patch -p1 < ../mykernel-2.0_for_linux-5.3.34.patch
++make defconfig # Default configuration is based on 'x86_64_defconfig'
++make -j$(nproc)
++qemu-system-x86_64 -kernel arch/x86/boot/bzImage
++```
