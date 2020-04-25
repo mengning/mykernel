@@ -36,9 +36,10 @@ qemu-system-x86_64 -kernel arch/x86/boot/bzImage
 
 * mykernel这样一个短小精悍的模拟内核，时常给我提供了看问题的角度和思路。当被庞杂的Linux内核代码弄得一头雾水时，我就去看看mykernel，很多复杂的问题就可以用简单的机制解释。——[pianogirl](http://blog.csdn.net/pianogirl123/article/details/51287024)
 
-# Users Link
+# 采用mykernel的课程和项目
 
 * [庖丁解牛Linux内核MOOC课程](https://mooc.study.163.com/course/1000072000?_trace_c_p_k2_=12d5497350df49e2a6e3878d1a5aa5ae&share=2&shareId=1000001002#/info) - 国家精品在线开放课程
 * [kernel-in-kernel](https://github.com/jserv/kernel-in-kernel)
 * [操作系统导论](https://github.com/jserv/linuxkernel)
 * [《庖丁解牛Linux内核分析》](https://j.youzan.com/pfzVI9)
+
