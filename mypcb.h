@@ -8,7 +8,7 @@
  */
 
 #define MAX_TASK_NUM        4
-#define KERNEL_STACK_SIZE   1024*2 # unsigned long
+#define KERNEL_STACK_SIZE   1024*2
 /* CPU-specific state of this task */
 struct Thread {
     unsigned long		ip;

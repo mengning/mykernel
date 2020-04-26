@@ -2,9 +2,10 @@
  *  linux/mykernel/mymain.c
  *
  *  Kernel internal my_start_kernel
+ *  Change IA32 to x86-64 arch, 2020/4/26
  *
- *  Copyright (C) 2013  Mengning
- *
+ *  Copyright (C) 2013, 2020  Mengning
+ *  
  */
 #include <linux/types.h>
 #include <linux/string.h>
@@ -37,8 +38,7 @@ void __init my_start_kernel(void)
     {
         memcpy(&task[i],&task[0],sizeof(tPCB));
         task[i].pid = i;
-	//*(&task[i].stack[KERNEL_STACK_SIZE-1] - 1) = (unsigned long)&task[i].stack[KERNEL_STACK_SIZE-1];
-	task[i].thread.sp = (unsigned long)(&task[i].stack[KERNEL_STACK_SIZE-1]);
+	    task[i].thread.sp = (unsigned long)(&task[i].stack[KERNEL_STACK_SIZE-1]);
         task[i].next = task[i-1].next;
         task[i-1].next = &task[i];
     }
@@ -46,10 +46,10 @@ void __init my_start_kernel(void)
     pid = 0;
     my_current_task = &task[pid];
 	asm volatile(
-    	"movl %1,%%esp\n\t" 	/* set task[pid].thread.sp to esp */
-    	"pushl %1\n\t" 	        /* push ebp */
-    	"pushl %0\n\t" 	        /* push task[pid].thread.ip */
-    	"ret\n\t" 	            /* pop task[pid].thread.ip to eip */
+    	"movq %1,%%rsp\n\t" 	/* set task[pid].thread.sp to rsp */
+    	"pushq %1\n\t" 	        /* push rbp */
+    	"pushq %0\n\t" 	        /* push task[pid].thread.ip */
+    	"ret\n\t" 	            /* pop task[pid].thread.ip to rip */
     	: 
     	: "c" (task[pid].thread.ip),"d" (task[pid].thread.sp)	/* input c or d mean %ecx/%edx*/
 	);

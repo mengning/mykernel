@@ -2,8 +2,9 @@
  *  linux/mykernel/myinterrupt.c
  *
  *  Kernel internal my_timer_handler
+ *  Change IA32 to x86-64 arch, 2020/4/26
  *
- *  Copyright (C) 2013  Mengning
+ *  Copyright (C) 2013, 2020  Mengning
  *
  */
 #include <linux/types.h>
@@ -26,14 +27,12 @@ volatile int time_count = 0;
  */
 void my_timer_handler(void)
 {
-#if 1
     if(time_count%1000 == 0 && my_need_sched != 1)
     {
         printk(KERN_NOTICE ">>>my_timer_handler here<<<\n");
         my_need_sched = 1;
     } 
     time_count ++ ;  
-#endif
     return;  	
 }
 
@@ -57,18 +56,17 @@ void my_schedule(void)
     	printk(KERN_NOTICE ">>>switch %d to %d<<<\n",prev->pid,next->pid);  
     	/* switch to next process */
     	asm volatile(	
-        	"pushl %%ebp\n\t" 	    /* save ebp */
-        	"movl %%esp,%0\n\t" 	/* save esp */
-        	"movl %2,%%esp\n\t"     /* restore  esp */
-        	"movl $1f,%1\n\t"       /* save eip */	
-        	"pushl %3\n\t" 
-        	"ret\n\t" 	            /* restore  eip */
+        	"pushq %%rbp\n\t" 	    /* save rbp of prev */
+        	"movq %%rsp,%0\n\t" 	/* save rsp of prev */
+        	"movq %2,%%rsp\n\t"     /* restore  rsp of next */
+        	"movq $1f,%1\n\t"       /* save rip of prev */	
+        	"pushq %3\n\t" 
+        	"ret\n\t" 	            /* restore  rip of next */
         	"1:\t"                  /* next process start here */
-        	"popl %%ebp\n\t"
+        	"popq %%rbp\n\t"
         	: "=m" (prev->thread.sp),"=m" (prev->thread.ip)
         	: "m" (next->thread.sp),"m" (next->thread.ip)
     	); 
     }  
     return;	
 }
-
