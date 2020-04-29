@@ -7,13 +7,13 @@ Develop your own OS kernel by reusing Linux infrastructure, based on x86-64/Linu
 ## Set up mykernel 2.0 in Ubuntu 18.04
 
 ```
-wget https://raw.github.com/mengning/mykernel/master/mykernel-2.0_for_linux-5.3.34.patch
+wget https://raw.github.com/mengning/mykernel/master/mykernel-2.0_for_linux-5.4.34.patch
 sudo apt install axel
 axel -n 20 https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.4.34.tar.xz
 xz -d linux-5.4.34.tar.xz
 tar -xvf linux-5.4.34.tar
 cd linux-5.4.34
-patch -p1 < ../mykernel-2.0_for_linux-5.3.34.patch
+patch -p1 < ../mykernel-2.0_for_linux-5.4.34.patch
 sudo apt install build-essential libncurses-dev bison flex libssl-dev libelf-dev
 make defconfig # Default configuration is based on 'x86_64_defconfig'
 # 使用allnoconfig编译出来qemu无法加载启动，不知道为什么？有明白的告诉我，完整编译太慢了，消耗的资源也多。
