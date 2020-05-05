@@ -60,5 +60,6 @@ qemu-system-x86_64 -kernel arch/x86/boot/bzImage
 * [kernel-in-kernel](https://github.com/jserv/kernel-in-kernel)
 * [操作系统导论](https://github.com/jserv/linuxkernel)
 * [《庖丁解牛Linux内核分析》](https://j.youzan.com/pfzVI9)
-* 微信公众号互动二维码
+
+## Contact us
 <img src="https://user-images.githubusercontent.com/609053/81026703-8c25df00-8ead-11ea-8254-29830c3e1146.png" alt="微信公众号互动二维码" width="100" align="bottom" />
