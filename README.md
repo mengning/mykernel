@@ -58,7 +58,7 @@ qemu-system-x86_64 -kernel arch/x86/boot/bzImage
 
 * [庖丁解牛Linux内核MOOC课程](https://mooc.study.163.com/course/1000072000?_trace_c_p_k2_=12d5497350df49e2a6e3878d1a5aa5ae&share=2&shareId=1000001002#/info) - 国家精品在线开放课程
 * [kernel-in-kernel](https://github.com/jserv/kernel-in-kernel)
-* [操作系统导论](https://github.com/jserv/linuxkernel)
+* [操作系统导论](https://github.com/mengning/linuxkernel)
 * [《庖丁解牛Linux内核分析》](https://j.youzan.com/pfzVI9)
 
 ## Contact us
