@@ -4,6 +4,8 @@ Develop your own OS kernel by reusing Linux infrastructure, based on x86-64/Linu
 
 [mykernel 1.0](https://github.com/mengning/mykernel/tree/cc6f687daaa831a350f3022853825ebe8d78aa2f) based on IA32/Linux Kernel 3.9.4.
 
+> 如果你喜欢最新或省时, 可试试`mykernel-2.0_for_linux-5.8.9.patch`
+
 ## Set up mykernel 2.0 in Ubuntu 18.04
 
 ```

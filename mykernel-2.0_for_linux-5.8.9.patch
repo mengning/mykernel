@@ -1,0 +1,366 @@
+From 6af88aabbd3b350092d9aad08d6f2ac58d8d1ff1 Mon Sep 17 00:00:00 2001
+From: meilihao <563278383@qq.com>
+Date: Wed, 16 Sep 2020 21:22:30 +0800
+Subject: + mykernel
+
+---
+ Makefile                     |  2 +-
+ arch/x86/kernel/time.c       |  2 +
+ include/linux/start_kernel.h |  1 +
+ include/linux/timer.h        |  1 +
+ init/main.c                  |  1 +
+ mykernel/Makefile            |  6 +++
+ mykernel/README.md           | 24 ++++++++++
+ mykernel/myinterrupt.c       | 44 +++++++++++++++++
+ mykernel/mymain.c            | 91 ++++++++++++++++++++++++++++++++++++
+ 9 files changed, 171 insertions(+), 1 deletion(-)
+ create mode 100644 mykernel/Makefile
+ create mode 100644 mykernel/README.md
+ create mode 100644 mykernel/myinterrupt.c
+ create mode 100644 mykernel/mymain.c
+
+diff --git a/Makefile b/Makefile
+index 36eab48d1..00028368c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1070,7 +1070,7 @@ export MODORDER := $(extmod-prefix)modules.order
+ export MODULES_NSDEPS := $(extmod-prefix)modules.nsdeps
+ 
+ ifeq ($(KBUILD_EXTMOD),)
+-core-y		+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/
++core-y		+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/ mykernel/
+ 
+ vmlinux-dirs	:= $(patsubst %/,%,$(filter %/, \
+ 		     $(core-y) $(core-m) $(drivers-y) $(drivers-m) \
+diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+index e42faa792..25c41a875 100644
+--- a/arch/x86/kernel/time.c
++++ b/arch/x86/kernel/time.c
+@@ -16,6 +16,7 @@
+ #include <linux/irq.h>
+ #include <linux/i8253.h>
+ #include <linux/time.h>
++#include <linux/timer.h>
+ #include <linux/export.h>
+ 
+ #include <asm/vsyscall.h>
+@@ -55,6 +56,7 @@ EXPORT_SYMBOL(profile_pc);
+ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ {
+ 	global_clock_event->event_handler(global_clock_event);
++	my_timer_handler();
+ 	return IRQ_HANDLED;
+ }
+ 
+diff --git a/include/linux/start_kernel.h b/include/linux/start_kernel.h
+index 8b369a41c..bb946a4d0 100644
+--- a/include/linux/start_kernel.h
++++ b/include/linux/start_kernel.h
+@@ -9,6 +9,7 @@
+    up something else. */
+ 
+ extern asmlinkage void __init start_kernel(void);
++extern void __init my_start_kernel(void);
+ extern void __init arch_call_rest_init(void);
+ extern void __ref rest_init(void);
+ 
+diff --git a/include/linux/timer.h b/include/linux/timer.h
+index 07910ae5d..bd0e40d02 100644
+--- a/include/linux/timer.h
++++ b/include/linux/timer.h
+@@ -193,6 +193,7 @@ extern int try_to_del_timer_sync(struct timer_list *timer);
+ 
+ extern void init_timers(void);
+ extern void run_local_timers(void);
++extern void my_timer_handler(void);
+ struct hrtimer;
+ extern enum hrtimer_restart it_real_fn(struct hrtimer *);
+ 
+diff --git a/init/main.c b/init/main.c
+index 883ded363..3c2aeb44b 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -1041,6 +1041,7 @@ asmlinkage __visible void __init start_kernel(void)
+ 	sfi_init_late();
+ 	kcsan_init();
+ 
++	my_start_kernel();
+ 	/* Do the rest non-__init'ed, we're now alive */
+ 	arch_call_rest_init();
+ 
+diff --git a/mykernel/Makefile b/mykernel/Makefile
+new file mode 100644
+index 000000000..6dee9432e
+--- /dev/null
++++ b/mykernel/Makefile
+@@ -0,0 +1,6 @@
++#
++# Makefile for the linux mykernel.
++#
++
++obj-y     = mymain.o myinterrupt.o
++
+diff --git a/mykernel/README.md b/mykernel/README.md
+new file mode 100644
+index 000000000..dc9794140
+--- /dev/null
++++ b/mykernel/README.md
+@@ -0,0 +1,24 @@
++mykernel 2.0
++==========
++Develop your own OS kernel by reusing Linux infrastructure, based on x86-64/Linux Kernel 5.8.9.
++
++## Set up mykernel 2.0 in deepin 20
++
++```
++sudo apt install build-essential
++sudo apt install axel
++sudo apt install qemu-system-x86 # install QEMU
++sudo apt install libncurses-dev bison flex libssl-dev libelf-dev
++wget https://raw.github.com/mengning/mykernel/master/mykernel-2.0_for_linux-5.3.34.patch
++axel -n 20 https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.8.9.tar.xz
++tar -xvf linux-5.8.9.tar.xz
++cd linux-5.8.9
++patch -p1 < ../mykernel-2.0_for_linux-5.8.9.patch
++make allnoconfig
++make menuconfig
++General setup ---> Configure standard kernel features ---> Enable support for printk ---> yes
++64-bit kernel ---> yes # 如果不需要64bit支持, 这个也可不要
++Device Drivers ---> Character devices ---> Enable TTY ---> yes
++time make -j2 bzImage
++qemu-system-x86_64 -kernel arch/x86/boot/bzImage
++```
+diff --git a/mykernel/myinterrupt.c b/mykernel/myinterrupt.c
+new file mode 100644
+index 000000000..8b85160ca
+--- /dev/null
++++ b/mykernel/myinterrupt.c
+@@ -0,0 +1,44 @@
++/*
++ *  linux/mykernel/myinterrupt.c
++ *
++ *  Kernel internal my_timer_handler
++ *
++ *  Copyright (C) 2013  Mengning
++ *
++ */
++#include <linux/kernel_stat.h>
++#include <linux/export.h>
++#include <linux/interrupt.h>
++#include <linux/percpu.h>
++#include <linux/init.h>
++#include <linux/mm.h>
++#include <linux/swap.h>
++#include <linux/pid_namespace.h>
++#include <linux/notifier.h>
++#include <linux/thread_info.h>
++#include <linux/time.h>
++#include <linux/jiffies.h>
++#include <linux/posix-timers.h>
++#include <linux/cpu.h>
++#include <linux/syscalls.h>
++#include <linux/delay.h>
++#include <linux/tick.h>
++#include <linux/kallsyms.h>
++#include <linux/irq_work.h>
++#include <linux/sched.h>
++#include <linux/sched/sysctl.h>
++#include <linux/slab.h>
++
++#include <asm/uaccess.h>
++#include <asm/unistd.h>
++#include <asm/div64.h>
++#include <asm/timex.h>
++#include <asm/io.h>
++
++/*
++ * Called by timer interrupt.
++ */
++void my_timer_handler(void)
++{
++	pr_notice("\n>>>>>>>>>>>>>>>>>my_timer_handler here<<<<<<<<<<<<<<<<<<\n\n");
++}
+diff --git a/mykernel/mymain.c b/mykernel/mymain.c
+new file mode 100644
+index 000000000..38c3a0660
+--- /dev/null
++++ b/mykernel/mymain.c
+@@ -0,0 +1,91 @@
++/*
++ *  linux/mykernel/mymain.c
++ *
++ *  Kernel internal my_start_kernel
++ *
++ *  Copyright (C) 2013  Mengning
++ *
++ */
++#include <linux/types.h>
++#include <linux/module.h>
++#include <linux/proc_fs.h>
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <linux/stackprotector.h>
++#include <linux/string.h>
++#include <linux/ctype.h>
++#include <linux/delay.h>
++#include <linux/ioport.h>
++#include <linux/init.h>
++#include <linux/initrd.h>
++#include <linux/acpi.h>
++#include <linux/tty.h>
++#include <linux/percpu.h>
++#include <linux/kmod.h>
++#include <linux/vmalloc.h>
++#include <linux/kernel_stat.h>
++#include <linux/start_kernel.h>
++#include <linux/security.h>
++#include <linux/smp.h>
++#include <linux/profile.h>
++#include <linux/rcupdate.h>
++#include <linux/moduleparam.h>
++#include <linux/kallsyms.h>
++#include <linux/writeback.h>
++#include <linux/cpu.h>
++#include <linux/cpuset.h>
++#include <linux/cgroup.h>
++#include <linux/efi.h>
++#include <linux/tick.h>
++#include <linux/interrupt.h>
++#include <linux/taskstats_kern.h>
++#include <linux/delayacct.h>
++#include <linux/unistd.h>
++#include <linux/rmap.h>
++#include <linux/mempolicy.h>
++#include <linux/key.h>
++#include <linux/buffer_head.h>
++#include <linux/debug_locks.h>
++#include <linux/debugobjects.h>
++#include <linux/lockdep.h>
++#include <linux/kmemleak.h>
++#include <linux/pid_namespace.h>
++#include <linux/device.h>
++#include <linux/kthread.h>
++#include <linux/sched.h>
++#include <linux/signal.h>
++#include <linux/idr.h>
++#include <linux/kgdb.h>
++#include <linux/ftrace.h>
++#include <linux/async.h>
++#include <linux/sfi.h>
++#include <linux/shmem_fs.h>
++#include <linux/slab.h>
++#include <linux/perf_event.h>
++#include <linux/file.h>
++#include <linux/ptrace.h>
++#include <linux/blkdev.h>
++#include <linux/elevator.h>
++
++#include <asm/io.h>
++#include <asm/bugs.h>
++#include <asm/setup.h>
++#include <asm/sections.h>
++#include <asm/cacheflush.h>
++
++#ifdef CONFIG_X86_LOCAL_APIC
++#include <asm/smp.h>
++#endif
++
++
++void __init my_start_kernel(void)
++{
++    int i = 0;
++    while(1)
++    {
++        i++;
++        if(i%100000 == 0)
++            pr_notice("my_start_kernel here  %d \n",i);
++            
++    }
++}
+-- 
+2.20.1
+
+
+From 105f049afc935c2759c79e3e2a03d39c80115ece Mon Sep 17 00:00:00 2001
+From: meilihao <563278383@qq.com>
+Date: Wed, 16 Sep 2020 21:38:40 +0800
+Subject: u README.md
+
+---
+ mykernel/README.md | 32 +++++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
+
+diff --git a/mykernel/README.md b/mykernel/README.md
+index dc9794140..351bee37b 100644
+--- a/mykernel/README.md
++++ b/mykernel/README.md
+@@ -2,23 +2,25 @@ mykernel 2.0
+ ==========
+ Develop your own OS kernel by reusing Linux infrastructure, based on x86-64/Linux Kernel 5.8.9.
+ 
+-## Set up mykernel 2.0 in deepin 20
++## Set up mykernel 2.0 in deepin 20/debian 10
+ 
+-```
+-sudo apt install build-essential
+-sudo apt install axel
+-sudo apt install qemu-system-x86 # install QEMU
+-sudo apt install libncurses-dev bison flex libssl-dev libelf-dev
+-wget https://raw.github.com/mengning/mykernel/master/mykernel-2.0_for_linux-5.3.34.patch
+-axel -n 20 https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.8.9.tar.xz
+-tar -xvf linux-5.8.9.tar.xz
+-cd linux-5.8.9
+-patch -p1 < ../mykernel-2.0_for_linux-5.8.9.patch
+-make allnoconfig
+-make menuconfig
++```bash
++$ sudo apt install build-essential git
++$ sudo apt install qemu-system-x86 # install qemu
++$ sudo apt install libncurses-dev bison flex libssl-dev libelf-dev
++$ wget https://raw.github.com/mengning/mykernel/master/mykernel-2.0_for_linux-5.3.34.patch
++$ git clone -b v5.8.9 --depth=1 https://mirrors.tuna.tsinghua.edu.cn/git/linux-stable.git linux-5.8.9
++$ cd linux-5.8.9
++$ patch -p1 < ../mykernel-2.0_for_linux-5.8.9.patch
++$ make allnoconfig
++$ make menuconfig
+ General setup ---> Configure standard kernel features ---> Enable support for printk ---> yes
+ 64-bit kernel ---> yes # 如果不需要64bit支持, 这个也可不要
+ Device Drivers ---> Character devices ---> Enable TTY ---> yes
+-time make -j2 bzImage
+-qemu-system-x86_64 -kernel arch/x86/boot/bzImage
++$ time make -j2 bzImage # Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz
++...
++real    1m37.299s
++user    2m51.840s
++sys     0m19.070s
++$ qemu-system-x86_64 -kernel arch/x86/boot/bzImage
+ ```
+-- 
+2.20.1
+
+
+From 8d3256132e4ab7f467b4afa321e24ea2dba91076 Mon Sep 17 00:00:00 2001
+From: meilihao <563278383@qq.com>
+Date: Wed, 16 Sep 2020 21:51:58 +0800
+Subject: u README.md
+
+---
+ mykernel/README.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mykernel/README.md b/mykernel/README.md
+index 351bee37b..02d8d43a0 100644
+--- a/mykernel/README.md
++++ b/mykernel/README.md
+@@ -8,7 +8,7 @@ Develop your own OS kernel by reusing Linux infrastructure, based on x86-64/Linu
+ $ sudo apt install build-essential git
+ $ sudo apt install qemu-system-x86 # install qemu
+ $ sudo apt install libncurses-dev bison flex libssl-dev libelf-dev
+-$ wget https://raw.github.com/mengning/mykernel/master/mykernel-2.0_for_linux-5.3.34.patch
++$ wget https://raw.github.com/mengning/mykernel/master/mykernel-2.0_for_linux-5.8.9.patch
+ $ git clone -b v5.8.9 --depth=1 https://mirrors.tuna.tsinghua.edu.cn/git/linux-stable.git linux-5.8.9
+ $ cd linux-5.8.9
+ $ patch -p1 < ../mykernel-2.0_for_linux-5.8.9.patch
+-- 
+2.20.1
+
