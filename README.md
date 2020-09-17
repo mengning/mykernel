@@ -21,6 +21,16 @@ make -j$(nproc) # 编译的时间比较久哦
 sudo apt install qemu # install QEMU
 qemu-system-x86_64 -kernel arch/x86/boot/bzImage
 ```
+感谢meilihao 提交了pr [#14](https://github.com/mengning/mykernel/pull/14) ，通过如下方法可以解决allnoconfig编译出来qemu无法加载启动的问题
+
+```
+$ make allnoconfig
+$ make menuconfig
+ General setup ---> Configure standard kernel features ---> Enable support for printk ---> yes
+ 64-bit kernel ---> yes # 如果不需要64bit支持, 这个也可不要
+ Device Drivers ---> Character devices ---> Enable TTY ---> yes
+ ```
+ 
 从qemu窗口中您可以看到my_start_kernel在执行，同时my_timer_handler时钟中断处理程序周期性执行。
 
 进入mykernel目录您可以看到qemu窗口输出的内容的代码mymain.c和myinterrupt.c。当前有一个CPU执行C代码的上下文环境，同时具有中断处理程序的上下文环境，我们通过Linux内核代码模拟了一个具有时钟中断和C代码执行环境的硬件平台。
