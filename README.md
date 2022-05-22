@@ -60,6 +60,8 @@ $ make menuconfig
     	); 
 ```
 
+* 这里的进程切换也仅仅是一种参考x86 Linux内核3.18.6的实现，而Linux内核中进程切换的实现经过了复杂的演化，参考[Evolution of the x86 context switch in Linux](https://www.maizure.org/projects/evolution_x86_context_switch_linux/)
+
 ## Comments
 
 * mykernel这样一个短小精悍的模拟内核，时常给我提供了看问题的角度和思路。当被庞杂的Linux内核代码弄得一头雾水时，我就去看看mykernel，很多复杂的问题就可以用简单的机制解释。——[pianogirl](http://blog.csdn.net/pianogirl123/article/details/51287024)
